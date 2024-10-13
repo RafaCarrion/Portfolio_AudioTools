@@ -16,8 +16,8 @@ namespace AudioTools
 	{
 		//private List<TerrainMaper_Node> terrainNodes;
 		private Dictionary<Vector2Int, TerrainMaper_Node> terrainNodes_dict = new Dictionary<Vector2Int, TerrainMaper_Node>(); //Dictionari <MatrixIndex, node>
-		private Dictionary<int, List<TerrainMaper_Node>> terrainGroups = new Dictionary<int, List<TerrainMaper_Node>>(); //Contains important groups of nodes  
-																														 //Matrix Sizes
+		private Dictionary<TerrainMaper_Keys.TerrainNode, List<TerrainMaper_Node>> terrainGroups = new Dictionary<TerrainMaper_Keys.TerrainNode, List<TerrainMaper_Node>>(); //Puts nodes in groups by its key
+		private List<GameObject> nodes_go_list = new List<GameObject>();                                                                                                                 //Matrix Sizes
 		[Header("Matrix Settings")]
 		public Vector2 matrixSize;
 		public float matrixHeight;
@@ -44,7 +44,8 @@ namespace AudioTools
 					GameObject node_go = new GameObject();
 					node_go.name = "Node: " + i.ToString() + ":" + z.ToString();
 					node_go.transform.parent = transform;
-					TerrainMaper_Node terrainNode =	node_go.AddComponent<TerrainMaper_Node>();
+					nodes_go_list.Add(node_go);
+					TerrainMaper_Node terrainNode = node_go.AddComponent<TerrainMaper_Node>();
 					terrainNode.nodeIndex = new Vector2Int(i, z);
 					float nodeXposition = matrixNodeDistance * i;
 					float nodeYposition = matrixNodeDistance * z;
@@ -58,6 +59,29 @@ namespace AudioTools
 						terrainNodes_dict.Add(terrainNode.nodeIndex, terrainNode);
 					}
 				}
+			}
+		}
+		public void CleanNodes()
+		{
+			if (nodes_go_list != null)
+			{
+				foreach (GameObject node_go in nodes_go_list)
+				{
+					Destroy(node_go);
+				}
+			}
+		}
+		private void OnDestroy()
+		{
+			CleanNodes();
+		}
+		public void StartCalculationOfComponents()
+		{
+			TerrainMapper_NodeGroupToCamera_Curve[] curveMaper = new TerrainMapper_NodeGroupToCamera_Curve[5]; //FIX THIS LENGTH!
+			curveMaper = GetComponents<TerrainMapper_NodeGroupToCamera_Curve>();
+			foreach(TerrainMapper_NodeGroupToCamera_Curve curveMap in curveMaper)
+			{
+				curveMap.InitCalculation();
 			}
 		}
 		private Vector3 CalculateOffset()
@@ -90,7 +114,7 @@ namespace AudioTools
 
 			int groupId = 1; //Start from 1, if is 0 I won´t display on the debug
 			TerrainMaper_Node tempNode;
-			
+
 
 			foreach (KeyValuePair<Vector2Int, TerrainMaper_Node> node in terrainNodes_dict) //Each node of matrix
 			{
@@ -100,18 +124,9 @@ namespace AudioTools
 				foreach (Vector2Int coord in neighbourd_coordinates) //Loop Neighbours of node
 				{
 					Vector2Int evaluatedIndex = new Vector2Int(coord.x + node.Key.x, coord.y + node.Key.y);
-					print("Evaluating Index: " + evaluatedIndex.ToString());
 					terrainNodes_dict.TryGetValue(evaluatedIndex, out tempNode);
-					try
-					{
-						
-					}
-					catch
-					{
-						continue;
-					}
 
-					if(tempNode !=null && tempNode.Get_FilteredTerrain() == evaluationKey) //Same Negihbour
+					if (tempNode != null && tempNode.Get_FilteredTerrain() == evaluationKey) //Same Negihbour
 					{
 						neighbourd_Success++;
 					}
@@ -120,30 +135,28 @@ namespace AudioTools
 				//After loop neighbourds, is part of a group? AHORA MISMO NO TIENE SENTIDO hacer Groups, es como hacer un filtro
 				if (neighbourd_Success >= neighbours_Threshold)
 				{
-					AddNodeToGroup(node.Value, groupId);
+					AddNodeToGroup(node.Value, node.Value.terrainDetected_Filtered);
 					node.Value.groupId = groupId;
 					groupId++; //Generates new group Id
 				}
 
 			}
 		}
-		private void AddNodeToGroup(TerrainMaper_Node newNode, int groupID)
+		private void AddNodeToGroup(TerrainMaper_Node newNode, TerrainMaper_Keys.TerrainNode nodeTerrain)
 		{
-			if (!terrainGroups.ContainsKey(groupID)) //Is in dictionary?
+			if (!terrainGroups.ContainsKey(nodeTerrain)) //Is in dictionary?
 			{
-				terrainGroups.Add(groupID, new List<TerrainMaper_Node>());
+				terrainGroups.Add(nodeTerrain, new List<TerrainMaper_Node>());
 			}
 			//Add node to list by GroupID
-			try
-			{
-				terrainGroups.TryGetValue(groupID, out List<TerrainMaper_Node> nodeGroup);
-				if (nodeGroup == null) { nodeGroup = new List<TerrainMaper_Node>(); }
-				nodeGroup.Add(newNode);
-			}
-			catch
-			{
-				Debug.LogWarning("Error trying to add node to groupList");
-			}
+			terrainGroups.TryGetValue(nodeTerrain, out List<TerrainMaper_Node> nodeGroup);
+			nodeGroup.Add(newNode);
+		}
+		public List<TerrainMaper_Node> Get_NodeGroup(TerrainMaper_Keys.TerrainNode key)
+		{
+			terrainGroups.TryGetValue(key, out List<TerrainMaper_Node> nodes);
+
+			return nodes;
 		}
 		//Debug options
 		public void AlternateCollisionNames()

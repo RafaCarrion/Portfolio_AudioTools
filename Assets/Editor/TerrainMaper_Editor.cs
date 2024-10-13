@@ -26,6 +26,10 @@ public class TerrainMaper_Editor : Editor
 		{
 			terrMaper.Create_Matrix();
 		}
+		if (GUILayout.Button("Destroy nodes"))
+		{
+			terrMaper.CleanNodes();
+		}
 		if (GUILayout.Button("Scan Node Groups"))
 		{
 			terrMaper.Scan_NodeGroups();
@@ -38,6 +42,10 @@ public class TerrainMaper_Editor : Editor
 		if (GUILayout.Button("Show Only :"))
 		{
 			terrMaper.SetTerrainDisplayFilter();
+		}
+		if (GUILayout.Button("Start Calculation In nodes :"))
+		{
+			terrMaper.StartCalculationOfComponents();
 		}
 		EditorGUILayout.PropertyField(terrainTypeProp);
 		serializedObject.ApplyModifiedProperties();

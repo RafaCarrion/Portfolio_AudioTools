@@ -5,7 +5,7 @@ using UnityEngine;
 namespace  AudioTools
 {
 
-	//This class gets asked by the node, it returns the terrain
+	//This class is asked by the node raycast, it returns the terrain
 	public class TerrainMaper_NodeClasifier : MonoBehaviour
 	{
 		[SerializeField] private TerrainMaper_Keys.TerrainNode terrainNode = new TerrainMaper_Keys.TerrainNode();
